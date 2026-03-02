@@ -31,7 +31,7 @@ class MeetingController extends Controller
         // ดึงข้อมูลการประชุมเฉพาะของเดือนและปีที่กำลังดูอยู่
         $meetings = Meeting::whereYear('meeting_date', $year)
             ->whereMonth('meeting_date', $month)
-            ->with('department')
+            ->with(['department', 'user']) // 📌 เพิ่ม 'user' ตรงนี้จุดเดียวครับ
             ->get()
             ->groupBy(fn ($m) => $m->meeting_date->format('Y-m-d'));
 
@@ -83,6 +83,11 @@ class MeetingController extends Controller
     // ================== UPDATE ==================
     public function update(Request $request, Meeting $meeting)
     {
+        // 📌 เพิ่มโค้ดเช็คสิทธิ์: ถ้าคนที่ล็อกอิน ไม่ใช่คนที่สร้างข้อมูลนี้ จะไม่อนุญาตให้แก้ไข
+        if ($meeting->admin_id !== auth()->id()) {
+            return back()->with('error', 'คุณไม่มีสิทธิ์แก้ไขการประชุมของผู้อื่น');
+        }
+
         $request->validate([
             'meeting_title'  => 'required|string',
             'meeting_date'   => 'required|date',
@@ -114,6 +119,11 @@ class MeetingController extends Controller
     // ================== DELETE ==================
     public function destroy(Meeting $meeting)
     {
+        // 📌 เพิ่มโค้ดเช็คสิทธิ์: ถ้าคนที่ล็อกอิน ไม่ใช่คนที่สร้างข้อมูลนี้ จะไม่อนุญาตให้ลบ
+        if ($meeting->admin_id !== auth()->id()) {
+            return back()->with('error', 'คุณไม่มีสิทธิ์ลบการประชุมของผู้อื่น');
+        }
+
         $meeting->delete();
 
         // รีเฟรชหน้าเดิม พร้อมส่งแจ้งเตือนลบสำเร็จ

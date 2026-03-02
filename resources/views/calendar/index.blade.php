@@ -417,8 +417,10 @@
                                             data-bs-toggle="modal"
                                             data-bs-target="#detailMeetingModal"
                                             data-id="{{ $m->meeting_id }}"
+                                            data-admin-id="{{ $m->admin_id ?? '' }}"
+                                            data-creator="{{ optional($m->user)->username ?? 'ไม่ระบุชื่อ' }}" {{-- 📌 เพิ่มการส่งชื่อคนสร้าง --}}
                                             data-title="{{ $m->meeting_title }}"
-                                            data-date="{{ $m->meeting_date->format('Y-m-d') }}"
+                                            data-date="{{ $m->meeting_date->format('d-m-y') }}"
                                             data-start="{{ substr($m->start_time,0,5) }}"
                                             data-end="{{ substr($m->end_time,0,5) }}"
                                             data-location="{{ $m->location_name }}"
@@ -504,6 +506,8 @@
                                     data-bs-toggle="modal"
                                     data-bs-target="#detailMeetingModal"
                                     data-id="{{ $m->meeting_id }}"
+                                    data-admin-id="{{ $m->admin_id ?? '' }}"
+                                    data-creator="{{ optional($m->user)->username ?? 'ไม่ระบุชื่อ' }}" {{-- 📌 เพิ่มการส่งชื่อคนสร้าง --}}
                                     data-title="{{ $m->meeting_title }}"
                                     data-date="{{ $m->meeting_date->format('Y-m-d') }}"
                                     data-start="{{ substr($m->start_time,0,5) }}"
@@ -761,10 +765,15 @@
         <p><b>แผนก:</b> <span id="detail_department"></span></p>
         <p><b>จำนวนคน:</b> <span id="detail_people"></span></p>
         <p><b>ช่วงเวลา:</b> <span id="detail_period"></span></p>
+        
+        {{-- 📌 ส่วนที่เพิ่มเข้ามาใหม่: แสดงชื่อคนสร้าง --}}
+        <br>
+        <p class="mb-0 text-muted" style="font-size: 14px;"><b>เพิ่มข้อมูลโดย:</b> <span id="detail_creator" style="color: #0066ff;"></span></p>
       </div>
 
       @auth
-      <div class="modal-footer d-flex justify-content-between w-100">
+      {{-- 📌 ใส่ ID ให้กับ div ของปุ่ม เพื่อใช้ JavaScript สั่งซ่อนหรือแสดง --}}
+      <div class="modal-footer justify-content-between w-100 d-none" id="actionButtons">
         
         <form method="POST" id="deleteMeetingForm">
             @csrf
@@ -802,6 +811,9 @@ document.addEventListener('DOMContentLoaded', () => {
         full: 'ทั้งวัน'
     };
 
+    // 📌 ดึงไอดีผู้ใช้ปัจจุบัน (ถ้าไม่ได้ล็อกอิน จะเป็นค่าว่าง)
+    const currentUserId = "{{ auth()->id() ?? '' }}";
+
     /* ===============================
        1. ระบบเติมข้อมูล 
     =============================== */
@@ -815,6 +827,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('detail_department').innerText = this.dataset.department;
             document.getElementById('detail_people').innerText     = this.dataset.people;
             document.getElementById('detail_period').innerText     = periodMap[this.dataset.period] ?? '-';
+            
+            // 📌 ดึงชื่อคนสร้างไปแสดงใน Popup
+            document.getElementById('detail_creator').innerText    = this.dataset.creator;
 
             const [sh, sm] = this.dataset.start.split(':');
             const [eh, em] = this.dataset.end.split(':');
@@ -839,6 +854,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('#editMeetingModal input[name="meeting_period"]').forEach(radio => {
                 radio.checked = (radio.value === this.dataset.period);
             });
+
+            // 📌 เช็คสิทธิ์: ถ้า ID คนล็อกอิน ตรงกับ ID คนสร้าง ให้โชว์ปุ่ม ลบ/แก้ไข
+            const actionBtns = document.getElementById('actionButtons');
+            if(actionBtns) {
+                // this.dataset.adminId คือ ID ของคนที่สร้างการประชุมนี้
+                if(currentUserId !== "" && currentUserId === this.dataset.adminId) {
+                    actionBtns.classList.remove('d-none');
+                    actionBtns.classList.add('d-flex');
+                } else {
+                    // ถ้าไม่ใช่คนสร้าง ให้ซ่อนปุ่ม
+                    actionBtns.classList.remove('d-flex');
+                    actionBtns.classList.add('d-none');
+                }
+            }
 
             /* ===== ระบบสลับหน้าต่าง (ดำ -> ขาว) ===== */
             const parentDarkModal = this.closest('.dark-modal');
@@ -875,14 +904,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* ===============================
-       3. ระบบกระโดดไปวันที่/เดือนที่เลือก (Flatpickr) <h3>{{ \Carbon\Carbon::create($year, $month)->translatedFormat('F') }} {{ $year + 543 }}</h3>
+       3. ระบบกระโดดไปวันที่/เดือนที่เลือก (Flatpickr)
     =============================== */
     const jumpDateBtn = document.getElementById('jumpDateBtn');
     if (jumpDateBtn) {
         flatpickr("#jumpDateBtn", {
             locale: "th", 
             dateFormat: "Y-m-d", 
-            
             // 📌 1. เมื่อปฏิทินโหลดเสร็จ ให้เปลี่ยนเลขปีเป็น พ.ศ. ทันที
             onReady: function(selectedDates, dateStr, instance) {
                 if (instance.currentYearElement) {
@@ -903,7 +931,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     instance.currentYearElement.value = instance.currentYear + 543;
                 }
             },
-
             onChange: function(selectedDates, dateStr, instance) {
                 // พอกดเลือกวันในปฏิทินปุ๊บ ระบบจะเปลี่ยนหน้าทันที
                 if (dateStr) {

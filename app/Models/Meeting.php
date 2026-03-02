@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User; // 📌 เพิ่มการเรียกใช้ User Model
 
 class Meeting extends Model
 {
@@ -37,6 +38,18 @@ class Meeting extends Model
             Department::class,
             'department_id',
             'department_id'
+        );
+    }
+
+    /**
+     * 📌 ความสัมพันธ์กับผู้ใช้งาน (คนที่เพิ่มการประชุม)
+     */
+    public function user()
+    {
+        return $this->belongsTo(
+            User::class, 
+            'admin_id', 
+            'id'
         );
     }
 }
