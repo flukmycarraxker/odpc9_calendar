@@ -349,10 +349,20 @@
     <div class="calendar-box">
 
         <div class="header">
-            <a href="/?month={{ $month == 1 ? 12 : $month - 1 }}&year={{ $month == 1 ? $year - 1 : $year }}">◀</a>
-            <h3>{{ \Carbon\Carbon::create($year, $month, 1)->translatedFormat('F') }} {{ $year + 543 }}</h3>
-            <a href="/?month={{ $month == 12 ? 1 : $month + 1 }}&year={{ $month == 12 ? $year + 1 : $year }}">▶</a>
-        </div>
+    @php
+        $thaiMonths = [
+            1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม', 4 => 'เมษายน',
+            5 => 'พฤษภาคม', 6 => 'มิถุนายน', 7 => 'กรกฎาคม', 8 => 'สิงหาคม',
+            9 => 'กันยายน', 10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม'
+        ];
+    @endphp
+
+    <a href="/?month={{ $month == 1 ? 12 : $month - 1 }}&year={{ $month == 1 ? $year - 1 : $year }}">◀</a>
+    
+    <h3>{{ $thaiMonths[(int)$month] }} {{ $year + 543 }}</h3>
+    
+    <a href="/?month={{ $month == 12 ? 1 : $month + 1 }}&year={{ $month == 12 ? $year + 1 : $year }}">▶</a>
+</div>
 
        <div class="top-actions">
             <a href="/?date={{ now()->format('Y-m-d') }}" class="btn-today">
