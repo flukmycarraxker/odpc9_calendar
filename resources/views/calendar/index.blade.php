@@ -350,7 +350,7 @@
 
         <div class="header">
             <a href="/?month={{ $month == 1 ? 12 : $month - 1 }}&year={{ $month == 1 ? $year - 1 : $year }}">◀</a>
-            <h3>{{ \Carbon\Carbon::create($year, $month)->translatedFormat('F') }} {{ $year + 543 }}</h3>
+            <h3>{{ \Carbon\Carbon::create($year, $month, 1)->translatedFormat('F') }} {{ $year + 543 }}</h3>
             <a href="/?month={{ $month == 12 ? 1 : $month + 1 }}&year={{ $month == 12 ? $year + 1 : $year }}">▶</a>
         </div>
 

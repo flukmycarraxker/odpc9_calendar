@@ -138,26 +138,25 @@
                         <td>{{ $user->email }}</td>
 
                         <td>
-                            {{-- 🔒 ล็อก admin ไม่ให้แก้ role ตัวเอง --}}
-                            @if($user->id === auth()->id())
-                                <span class="badge-admin">Admin (คุณ)</span>
-                            @else
-                                {{-- เพิ่ม ID ให้ฟอร์มแต่ละอัน เพื่อให้ JS สั่ง Submit ได้ถูกตัว --}}
-                                <form action="{{ route('admin.users.updateRole', $user->id) }}" method="POST" id="form-role-{{ $user->id }}">
-                                    @csrf
-                                    <div class="d-flex gap-2">
-                                        <select name="role_id" class="form-select" id="select-role-{{ $user->id }}">
-                                            <option value="1" {{ $user->role_id == 1 ? 'selected' : '' }}>Admin</option>
-                                            <option value="2" {{ $user->role_id == 2 ? 'selected' : '' }}>User</option>
-                                            <option value="3" {{ $user->role_id == 3 ? 'selected' : '' }}>Guest</option>
-                                        </select>
+                            {{-- 🔓 ปลดล็อกให้แสดงฟอร์มเปลี่ยนสิทธิ์สำหรับ "ทุกคน" รวมถึงตัวเอง --}}
+                            <form action="{{ route('admin.users.updateRole', $user->id) }}" method="POST" id="form-role-{{ $user->id }}">
+                                @csrf
+                                <div class="d-flex gap-2">
+                                    <select name="role_id" class="form-select" id="select-role-{{ $user->id }}">
+                                        <option value="1" {{ $user->role_id == 1 ? 'selected' : '' }}>Admin</option>
+                                        <option value="2" {{ $user->role_id == 2 ? 'selected' : '' }}>User</option>
+                                        <option value="3" {{ $user->role_id == 3 ? 'selected' : '' }}>Guest</option>
+                                    </select>
 
-                                        {{-- ปุ่มเรียกฟังก์ชันยืนยัน --}}
-                                        <button type="button" class="btn-save" onclick="confirmRoleChange('{{ $user->id }}', '{{ $user->username }}')">
-                                            บันทึก
-                                        </button>
-                                    </div>
-                                </form>
+                                    <button type="button" class="btn-save" onclick="confirmRoleChange('{{ $user->id }}', '{{ $user->username }}')">
+                                        บันทึก
+                                    </button>
+                                </div>
+                            </form>
+
+                            {{-- 📌 เพิ่มข้อความบอกว่าเป็นบัญชีของคุณ (กันเปลี่ยนผิด) --}}
+                            @if($user->id === auth()->id())
+                                <div class="mt-2 text-danger" style="font-size: 12px; font-weight: bold;">*(นี่คือบัญชีของคุณ)*</div>
                             @endif
                         </td>
 
@@ -184,8 +183,8 @@
 
         Swal.fire({
             title: 'ยืนยันการเปลี่ยนสิทธิ์?',
-            html: `คุณต้องการเปลี่ยนสิทธิ์ของ <b>${username}</b> ให้เป็น <b>${selectedRoleText}</b> ใช่หรือไม่?`,
-            icon: 'question',
+            html: `คุณต้องการเปลี่ยนสิทธิ์ของ <b>${username}</b> ให้เป็น <b>${selectedRoleText}</b> ใช่หรือไม่?<br><br><span style="color:red; font-size:14px;">(หากเปลี่ยนสิทธิ์ตัวเองเป็น User/Guest คุณจะเด้งออกจากหน้านี้ทันที)</span>`,
+            icon: 'warning', // เปลี่ยนไอคอนเป็นคำเตือนเพื่อให้ระวังขึ้น
             showCancelButton: true,
             confirmButtonColor: '#14b8a6',
             cancelButtonColor: '#6c757d',
@@ -208,6 +207,20 @@
                 icon: 'success',
                 title: 'สำเร็จ!',
                 text: '{!! session('success') !!}',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        @endif
+        
+        // รับแจ้งเตือน Error จาก Controller (ถ้ามี)
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'ผิดพลาด!',
+                text: '{!! session('error') !!}',
                 toast: true,
                 position: 'top-end',
                 showConfirmButton: false,
