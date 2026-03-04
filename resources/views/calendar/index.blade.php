@@ -430,7 +430,7 @@
                                             data-admin-id="{{ $m->admin_id ?? '' }}"
                                             data-creator="{{ optional($m->user)->username ?? 'ไม่ระบุชื่อ' }}" {{-- 📌 เพิ่มการส่งชื่อคนสร้าง --}}
                                             data-title="{{ $m->meeting_title }}"
-                                            data-date="{{ $m->meeting_date->format('d-m-y') }}"
+                                            data-date="{{ $m->meeting_date->format('Y-m-d') }}"
                                             data-start="{{ substr($m->start_time,0,5) }}"
                                             data-end="{{ substr($m->end_time,0,5) }}"
                                             data-location="{{ $m->location_name }}"
@@ -559,7 +559,7 @@
 
             <div class="mb-3">
                 <label>วันที่</label>
-                <input type="text" id="meeting_date_display" class="form-control" readonly>
+                <input type="text" id="meeting_date_display" class="form-control bg-white" readonly>
                 <input type="hidden" name="meeting_date" id="meeting_date">
             </div>
 
@@ -671,7 +671,8 @@
 
           <div class="mb-3">
             <label>วันที่</label>
-            <input type="date" name="meeting_date" id="edit_date" class="form-control" required>
+            {{-- 📌 เปลี่ยนจาก type="date" เป็น text และใช้เป็น bg-white --}}
+            <input type="text" name="meeting_date" id="edit_date" class="form-control bg-white" required>
           </div>
 
           <div class="mb-3">
@@ -813,6 +814,8 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+let editDatePicker; // ประกาศตัวแปรไว้ใช้เรียกข้างใน
+
 document.addEventListener('DOMContentLoaded', () => {
 
     const periodMap = {
@@ -825,13 +828,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentUserId = "{{ auth()->id() ?? '' }}";
 
     /* ===============================
+       📌 ติดตั้ง Flatpickr สำหรับฟอร์มแก้ไข
+    =============================== */
+    editDatePicker = flatpickr("#edit_date", {
+        locale: "th", 
+        dateFormat: "Y-m-d", 
+        altInput: true,
+        altFormat: "d/m/Y",
+        onReady: function(selectedDates, dateStr, instance) {
+            if (instance.currentYearElement) instance.currentYearElement.value = instance.currentYear + 543;
+            if (instance.altInput && selectedDates.length > 0) {
+                let d = selectedDates[0];
+                instance.altInput.value = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + (d.getFullYear() + 543);
+            }
+        },
+        onYearChange: function(selectedDates, dateStr, instance) {
+            if (instance.currentYearElement) instance.currentYearElement.value = instance.currentYear + 543;
+        },
+        onMonthChange: function(selectedDates, dateStr, instance) {
+            if (instance.currentYearElement) instance.currentYearElement.value = instance.currentYear + 543;
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+            if (instance.altInput && selectedDates.length > 0) {
+                let d = selectedDates[0];
+                instance.altInput.value = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + (d.getFullYear() + 543);
+            }
+        }
+    });
+
+    /* ===============================
        1. ระบบเติมข้อมูล 
     =============================== */
     document.querySelectorAll('.meeting-btn').forEach(btn => {
         btn.addEventListener('click', function () {
 
+            // 📌 แปลงวันที่เป็น วัน/เดือน/ปี(พ.ศ.) เพื่อโชว์ใน Modal หน้าแรก
+            let rawDate = this.dataset.date;
+            let dParts = rawDate.split('-');
+            let thaiDateStr = dParts[2] + '/' + dParts[1] + '/' + (parseInt(dParts[0]) + 543);
+
             document.getElementById('detail_title').innerText      = this.dataset.title;
-            document.getElementById('detail_date').innerText       = this.dataset.date;
+            document.getElementById('detail_date').innerText       = thaiDateStr; // ใช้ตัวแปรที่แปลงแล้ว
             document.getElementById('detail_time').innerText       = this.dataset.start + ' - ' + this.dataset.end;
             document.getElementById('detail_location').innerText   = this.dataset.location;
             document.getElementById('detail_department').innerText = this.dataset.department;
@@ -848,7 +885,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('deleteMeetingForm').action = `/meetings/${this.dataset.id}`;
             
             document.getElementById('edit_title').value    = this.dataset.title;
-            document.getElementById('edit_date').value     = this.dataset.date;
+            
+            // 📌 เซ็ตค่าให้ปฏิทินแบบใหม่ของ Flatpickr ทำงาน
+            if(editDatePicker) {
+                editDatePicker.setDate(rawDate);
+            } else {
+                document.getElementById('edit_date').value = rawDate;
+            }
+
             document.getElementById('edit_location').value = this.dataset.location;
             document.getElementById('edit_people').value   = this.dataset.people;
             document.getElementById('edit_start_h').value = sh;
@@ -908,7 +952,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const date   = button.getAttribute('data-date');
             if(date) {
                 document.getElementById('meeting_date').value = date;
-                document.getElementById('meeting_date_display').value = date;
+                
+                // 📌 เปลี่ยนค่าแสดงผลตอนเพิ่ม เป็น วัน/เดือน/ปี พ.ศ.
+                let parts = date.split('-');
+                let thaiYear = parseInt(parts[0]) + 543;
+                document.getElementById('meeting_date_display').value = parts[2] + '/' + parts[1] + '/' + thaiYear;
             }
         });
     }
