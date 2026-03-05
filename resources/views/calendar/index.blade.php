@@ -1037,6 +1037,35 @@ function confirmDelete() {
         timerProgressBar: true
     });
 @endif
+
+/* ===============================
+   📌 6. เด้งแจ้งเตือนเมื่อเซสชันหลุด หรือมีข้อผิดพลาด (โค้ดที่เพิ่มมาใหม่)
+=============================== */
+@if(session('error_timeout'))
+    Swal.fire({
+        icon: 'warning', 
+        title: 'เซสชันหมดอายุ!',
+        text: '{!! session('error_timeout') !!}',
+        confirmButtonColor: '#14b8a6',
+        confirmButtonText: 'เข้าสู่ระบบใหม่',
+        backdrop: `rgba(0,0,0,0.6)` 
+    }).then(() => {
+        window.location.href = "{{ route('login') }}"; // นำทางไปหน้า login ถ้ากดยืนยัน
+    });
+@endif
+
+@if(session('error'))
+    Swal.fire({
+        icon: 'error',
+        title: 'ผิดพลาด!',
+        text: '{!! session('error') !!}',
+        toast: true,
+        position: 'top-end', 
+        showConfirmButton: false,
+        timer: 3000, 
+        timerProgressBar: true
+    });
+@endif
 </script>
 
 @endsection

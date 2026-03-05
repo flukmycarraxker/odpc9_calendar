@@ -122,7 +122,6 @@
         <form method="POST" action="{{ route('login') }}">
             @csrf
 
-            <!-- Username -->
             <div class="form-group">
                 <label>USERNAME</label>
                 <input
@@ -138,7 +137,6 @@
                 @enderror
             </div>
 
-            <!-- Password -->
             <div class="form-group">
                 <label>PASSWORD</label>
                 <input
@@ -152,18 +150,15 @@
                 @enderror
             </div>
 
-            <!-- ปุ่มจำรหัสผ่าน -->
             <div class="remember-row">
                 <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
                 <label for="remember">Remember me</label>
             </div>
 
-            <!-- ปุ่มล็อกอิน -->
             <button type="submit" class="btn-login">
                 LOGIN
             </button>
 
-            <!-- ปุ่มลืมรหัสผ่าน -->
             @if (Route::has('password.request'))
             <div class="forgot">
                 <a href="{{ route('password.request') }}">
@@ -175,4 +170,24 @@
         </form>
     </div>
 </div>
+
+{{-- 📌 ส่วนที่เพิ่มเข้ามาใหม่: โหลด SweetAlert2 และดักจับการแจ้งเตือน --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 📌 ตรวจสอบว่าระบบเตะกลับมาพร้อมส่งข้อความ error_timeout หรือไม่
+    @if(session('error_timeout'))
+        Swal.fire({
+            icon: 'warning', 
+            title: 'เซสชันหมดอายุ!',
+            text: '{!! session('error_timeout') !!}',
+            confirmButtonColor: '#2dd4bf', // ใช้สีเขียวเดียวกับปุ่ม LOGIN ของคุณ
+            confirmButtonText: 'เข้าสู่ระบบใหม่',
+            backdrop: `rgba(0,0,0,0.6)` // ทำให้หน้าจอมืดลงให้ป๊อปอัปเด่นขึ้น
+        });
+    @endif
+});
+</script>
+
 @endsection
