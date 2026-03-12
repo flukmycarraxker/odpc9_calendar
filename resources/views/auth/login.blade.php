@@ -178,7 +178,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 📌 ตรวจสอบว่าระบบเตะกลับมาพร้อมส่งข้อความ error_timeout หรือไม่
     @if(session('error_timeout'))
-        Swal.fire({
+        Swal.fire({   
             icon: 'warning', 
             title: 'เซสชันหมดอายุ!',
             text: '{!! session('error_timeout') !!}',
